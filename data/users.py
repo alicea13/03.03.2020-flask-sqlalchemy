@@ -19,4 +19,4 @@ class User(SqlAlchemyBase):
     news = orm.relation("News", back_populates='user')
 
     def __repr__(self):
-        return f'<{self.__class__.__name__}> {self.name} {self.email}'
+        return f'<{self.__class__.__name__}> {self.id} {self.name} {self.email}'
