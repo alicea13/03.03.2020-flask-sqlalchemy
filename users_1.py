@@ -17,9 +17,6 @@ class User():
                                      default=datetime.datetime.now)
     news = orm.relation("News", back_populates='user')
 
-    def __repr__(self):
-        return f'<{self.__class__.__name__}> {self.name} {self.email}'
-
     __tablename__ = "jobs"
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
@@ -28,3 +25,6 @@ class User():
     about = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     email = sqlalchemy.Column(sqlalchemy.String,
                               index=True, unique=True, nullable=True)
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}> {self.name} {self.email}'
