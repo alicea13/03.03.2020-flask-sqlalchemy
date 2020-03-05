@@ -1,6 +1,6 @@
 from flask import Flask
 from data import db_session
-from  data.users import User
+from data.users import User
 from sqlalchemy import or_
 import datetime
 
@@ -15,8 +15,8 @@ def main():
 
     session = db_session.create_session()
 
-    # for user in session.query(User).all():
-    #     print(user)
+    for user in session.query(User).all():
+         print(user)
 
     # for user in session.query(User).filter((User.id > 1) | (User.email.notilike("%1%"))):
         # print(user)
