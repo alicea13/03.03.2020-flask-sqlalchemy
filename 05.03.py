@@ -1,9 +1,13 @@
+
+
 from flask import Flask, request, make_response, session
-from flask_login import LoginManager, login_user, login_required, logout_user
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from werkzeug.exceptions import abort
 from werkzeug.utils import redirect
 
 from data import db_session
 from data.Login_Form import LoginForm
+from data.News_Form import NewsForm
 from data.users import User
 from data.news import News
 from data.RegisterForm import RegisterForm
@@ -24,32 +28,22 @@ def main():
     app.run()
     session = db_session.create_session()
 
-    news = News(title="Первая новость", content="Привет блог!",
-                user_id=1, is_private=False)
-    session.add(news)
     session.commit()
-
-    user = session.query(User).filter(User.id == 1).first()
-    news = News(title="Вторая новость", content="Уже вторая запись!",
-                user=user, is_private=False)
-    session.add(news)
-    session.commit()
-
-    news = News(title='Совершенно секретно', content='Скоро лето', is_privete =True)
-    user.news.append()
-
-    session.commit()
-
-    for news in user.news:
-        print(news)
 
 
 @app.route("/")
 def index():
     session = db_session.create_session()
-    news = session.query(News).filter(News.is_private != True)
+    # news = session.query(News).filter(News.is_private != True)
+
+    if current_user.is_authenticated:
+        news = session.query(News).filter(
+            (News.user == current_user) | (News.is_private != True))
+    else:
+        news = session.query(News).filter(News.is_private != True)
     res = make_response(render_template('index.html', news=news))
     res.set_cookie("visits_count", '1', max_age=60 * 60 * 24 * 365 * 2)
+    return render_template("index.html", news=news)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -70,6 +64,9 @@ def reqister():
             email=form.email.data,
             about=form.about.data
         )
+
+        test = User()
+
         user.set_password(form.password.data)
         session.add(user)
         session.commit()
@@ -109,7 +106,6 @@ def load_user(user_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-
     if form.validate_on_submit():
         session = db_session.create_session()
         user = session.query(User).filter(User.email == form.email.data).first()
@@ -122,17 +118,72 @@ def login():
     return render_template('login.html', title='Авторизация', form=form)
 
 
+@app.route('/news',  methods=['GET', 'POST'])
+@login_required
+def add_news():
+    form = NewsForm()
+    if form.validate_on_submit():
+        session = db_session.create_session()
+        news = News()
+        news.title = form.title.data
+        news.content = form.content.data
+        news.is_private = form.is_private.data
+        current_user.news.append(news)
+        session.merge(current_user)
+        session.commit()
+        return redirect('/')
+    return render_template('news.html', title='Добавление новости',
+                           form=form)
+
+
+@app.route('/news/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_news(id):
+    form = NewsForm()
+    if request.method == "GET":
+        session = db_session.create_session()
+        news = session.query(News).filter(News.id == id,
+                                          News.user == current_user).first()
+        if news:
+            form.title.data = news.title
+            form.content.data = news.content
+            form.is_private.data = news.is_private
+        else:
+            abort(404)
+    if form.validate_on_submit():
+        session = db_session.create_session()
+        news = session.query(News).filter(News.id == id,
+                                          News.user == current_user).first()
+        if news:
+            news.title = form.title.data
+            news.content = form.content.data
+            news.is_private = form.is_private.data
+            session.commit()
+            return redirect('/')
+        else:
+            abort(404)
+    return render_template('news.html', title='Редактирование новости', form=form)
+
+
+@app.route('/news_delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+def news_delete(id):
+    session = db_session.create_session()
+    news = session.query(News).filter(News.id == id,
+                                      News.user == current_user).first()
+    if news:
+        session.delete(news)
+        session.commit()
+    else:
+        abort(404)
+    return redirect('/')
+
+
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect("/")
-
-    if current_user.is_authenticated:
-        news = session.query(News).filter(
-            (News.user == current_user) | (News.is_private != True))
-    else:
-        news = session.query(News).filter(News.is_private != True)
 
 
 
