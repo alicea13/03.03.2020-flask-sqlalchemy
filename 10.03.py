@@ -1,6 +1,6 @@
 
 
-from flask import Flask, request, make_response, session
+from flask import Flask, request, make_response, session, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.exceptions import abort
 from werkzeug.utils import redirect
@@ -185,6 +185,11 @@ def news_delete(id):
 def logout():
     logout_user()
     return redirect("/")
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify({'error': "Not found"}))
 
 
 if __name__ == '__main__':
