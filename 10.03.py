@@ -1,11 +1,9 @@
-
-
 from flask import Flask, request, make_response, session, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.exceptions import abort
 from werkzeug.utils import redirect
 
-from data import db_session, news_api
+from data import db_session, news_api, jobs_api
 from data.Login_Form import LoginForm
 from data.News_Form import NewsForm
 from data.users import User
@@ -26,7 +24,9 @@ login_manager.init_app(app)
 def main():
     db_session.global_init('db/blogs.sqlite')
     app.register_blueprint(news_api.blueprint)
+    app.register_blueprint(jobs_api.blueprint)
     session = db_session.create_session()
+
     app.run()
 
     session.commit()
@@ -190,6 +190,9 @@ def logout():
 @app.errorhandler(404)
 def not_found(error):
     return make_response(jsonify({'error': "Not found"}))
+
+
+
 
 
 if __name__ == '__main__':
